@@ -5,4 +5,8 @@ const app = express();
 
 app.use(bodyParser.json());
 
-app.listen(3000); 
+app.get('/', (req, res, next) => {
+    res.send('Hello World')
+})
+
+app.listen(4000); 
