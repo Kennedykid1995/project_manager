@@ -5,16 +5,31 @@ const { buildSchema } = require('graphql')
 
 const app = express();
 
+const projects = [];
+
 app.use(bodyParser.json());
 
+
+//project schema
 app.use('/graphql', graphQLHttp({
     schema: buildSchema(`
-        type RootQuery {
-            events: [String!]!
+        type Project {
+            _id: ID!
+            title: String!
+            description: String!
         }
 
-        type RootMutation{
-            createEvent(name: String): String
+        input ProjectInput {
+            title: String!
+            description: String!
+        }
+
+        type RootQuery {
+            projects: [Project!]!
+        }
+
+        type RootMutation {
+            createProject(projectInput: ProjectInput): Project
         }
 
         schema {
@@ -23,15 +38,22 @@ app.use('/graphql', graphQLHttp({
         }
     `),
     rootValue: {
-        events: () => {
-            return ['event', 'event1', 'event2']
+        projects: () => {
+            return projects
         },
-        createEvent: (args) => {
-            const eventName = args.name;
-            return eventName;
+        createProject: (args) => {
+            const project =  {
+                _id: Math.random().toString(),
+                title: args.projectInput.title, 
+                description: args.projectInput.description
+            }
+            projects.push(project)
+            return project
         }
     },
     graphiql: true
 }))
-
+//task schema
+//checklist schema 
+//checklist item schema
 app.listen(4000); 
