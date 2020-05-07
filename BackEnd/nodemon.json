@@ -1,0 +1,5 @@
+{
+    "env":{
+        "MONGO_URI":"mongodb+srv://Admin:DJk9GqQssX5UtNF3@projectmanager-kbvlc.mongodb.net/test?retryWrites=true&w=majority"
+    }
+}
