@@ -5,7 +5,7 @@ const { buildSchema } = require('graphql')
 const mongoose = require('mongoose');
 const app = express();
 
-const projects = [];
+const Project = require("./models/projects");
 
 app.use(bodyParser.json());
 
@@ -39,15 +39,27 @@ app.use('/graphql', graphQLHttp({
     `),
     rootValue: {
         projects: () => {
-            return projects
+            Project.find().then(result => {
+                return result.map(result =>{
+                    return {...result._doc, _id: result._doc._id.toString()}
+                })
+            }).catch(err => {
+                console.log(err)
+                throw err
+            })
         },
         createProject: (args) => {
-            const project = {
-                _id: Math.random().toString(),
+            const project = new Project({
                 title: args.projectInput.title,
                 description: args.projectInput.description
-            }
-            projects.push(project)
+            })
+            return project.save().then(result => {
+                console.log(result)
+                return { ...result._doc };
+            }).catch(err => {
+                console.log(err);
+                throw err;
+            });
             return project
         }
     },
@@ -55,12 +67,12 @@ app.use('/graphql', graphQLHttp({
 }))
 
 mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true, 
+    useNewUrlParser: true,
     useUnifiedTopology: true,
     useCreateIndex: true,
     useFindAndModify: false
 }).then(() => {
-    app.listen(4000); 
+    app.listen(4000);
     console.log("Mongo started")
 }).catch(err => {
     console.log(process.env.MONGO_URI)
