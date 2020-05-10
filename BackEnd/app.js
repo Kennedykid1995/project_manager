@@ -39,7 +39,8 @@ app.use('/graphql', graphQLHttp({
     `),
     rootValue: {
         projects: () => {
-            Project.find().then(result => {
+            return Project.find()
+            .then(result => {
                 return result.map(result =>{
                     return {...result._doc, _id: result._doc._id.toString()}
                 })
