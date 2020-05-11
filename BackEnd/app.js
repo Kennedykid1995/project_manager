@@ -4,8 +4,9 @@ const graphQLHttp = require('express-graphql');
 const { buildSchema } = require('graphql')
 const mongoose = require('mongoose');
 const app = express();
-
+const bcrypt = require('bcryptjs'); 
 const Project = require("./models/projects");
+const User = require("./models/user"); 
 
 app.use(bodyParser.json());
 
@@ -19,6 +20,16 @@ app.use('/graphql', graphQLHttp({
             description: String!
         }
 
+        type User {
+            _id: ID!
+            email: String!
+            password: String
+        }
+
+        input UserInput {
+            email: String!
+            password: String!
+        }
         input ProjectInput {
             title: String!
             description: String!
@@ -30,6 +41,7 @@ app.use('/graphql', graphQLHttp({
 
         type RootMutation {
             createProject(projectInput: ProjectInput): Project
+            createUser(userInput: UserInput): User
         }
 
         schema {
@@ -40,28 +52,66 @@ app.use('/graphql', graphQLHttp({
     rootValue: {
         projects: () => {
             return Project.find()
-            .then(result => {
-                return result.map(result =>{
-                    return {...result._doc, _id: result._doc._id.toString()}
+                .then(result => {
+                    return result.map(result => {
+                        return { ...result._doc, _id: result._doc._id.toString() }
+                    })
+                }).catch(err => {
+                    console.log(err)
+                    throw err
                 })
-            }).catch(err => {
-                console.log(err)
-                throw err
-            })
         },
         createProject: (args) => {
             const project = new Project({
                 title: args.projectInput.title,
-                description: args.projectInput.description
+                description: args.projectInput.description,
+                creator: '5eb99c11b94eb21a144336fe'
             })
-            return project.save().then(result => {
-                console.log(result)
-                return { ...result._doc };
-            }).catch(err => {
+            let createdProject;
+            return project
+            .save()
+            .then(result => {
+                createdProject = {...result._doc, _id: result._doc._id.toString()}
+                console.log(createdProject)
+                return User.findById('5eb99c11b94eb21a144336fe')
+            })
+            .then(user => {
+                if(!user){
+                    throw new Error('User Not Found')
+                }
+                console.log(user)
+                user.createdProjects.push(project);
+                return user.save()
+            })
+            .then(result => {
+                return createdProject; 
+            })
+            .catch(err => {
                 console.log(err);
                 throw err;
             });
-            return project
+        },
+        createUser: args => {
+            return User.findOne({email: args.userInput.email})
+            .then(user => {
+                if(user){
+                    throw new Error('User Exists Already')
+                }
+                return bcrypt.hash(args.userInput.password, 12)
+            })
+            .then(hashedPassword => {
+                const user = new User({
+                    email: args.userInput.email,
+                    password: hashedPassword
+                })
+                return user.save()
+            })
+            .then(result => {
+                return {...result._doc, password:null ,_id: result.id}; 
+            })
+            .catch(err => {
+                throw err
+            })
         }
     },
     graphiql: true
