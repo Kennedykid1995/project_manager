@@ -16,6 +16,12 @@ type User {
     createdProjects: [Project!]
 }
 
+type Task{
+    _id: ID!
+    title: String!
+    description: String!
+}
+
 input UserInput {
     email: String!
     password: String!

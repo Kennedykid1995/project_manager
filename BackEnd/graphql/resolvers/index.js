@@ -2,6 +2,14 @@ const bcrypt = require('bcryptjs');
 const Project = require("../../models/projects");
 const User = require("../../models/user");
 
+const transformProject = project => {
+    return {
+        ...project.doc,
+        _id: project.id,
+        creator: user.bind(this, project.creator)
+    };
+}
+
 const user = async userId => {
     try {
         const user = await User.findById(userId)
@@ -14,86 +22,76 @@ const user = async userId => {
 const projects = async projectId => {
     try {
         const projects = await Project.find({ _id: { $in: projectId } })
-        projects.map(project => {
-            return {
-                ...project.doc,
-                _id: event.id,
-                creator: user.bind(this, project.creator)
-            };
+        return projects.map(project => {
+            return transformProject(project);
         })
-        return projects.map(...project)
     } catch (err) {
+        throw err
+    }
+}
+
+const singleProject = async projectId => {
+    try {
+        const project = await Event.findById(projectId);
+        return transformProject(project);
+    }catch(err){
         throw err
     }
 }
 
 
 module.exports = {
-    projects: () => {
-        return Project.find()
-            .then(result => {
+    projects: async () => {
+        try{
+        const result = await Project.find()
                 return result.map(project => {
-                    return {
-                        ...project._doc,
-                        _id: project.id,
-                        creator: user.bind(this, project._doc.creator)
-                    }
-                })
-            }).catch(err => {
+                    return transformProject(project); 
+            })
+        } catch(err) {
                 console.log(err)
                 throw err
-            })
+            }
     },
-    createProject: (args) => {
+    createProject: async (args) => {
         const project = new Project({
             title: args.projectInput.title,
             description: args.projectInput.description,
             creator: '5eb99c11b94eb21a144336fe'
         })
         let createdProject;
-        return project
+        try{
+        const result = await project
             .save()
-            .then(result => {
-                createdProject = { ...result._doc, _id: result._doc._id.toString(), creator: user.bind(this, result._doc.creator) }
+                createdProject = transformProject(result)
                 console.log(createdProject)
-                return User.findById('5eb99c11b94eb21a144336fe')
-            })
-            .then(user => {
+                const user = await User.findById('5eb99c11b94eb21a144336fe')
                 if (!user) {
                     throw new Error('User Not Found')
                 }
                 console.log(user)
                 user.createdProjects.push(project);
-                return user.save()
-            })
-            .then(result => {
+                await user.save()
                 return createdProject;
-            })
-            .catch(err => {
+            } catch(err) {
                 console.log(err);
                 throw err;
-            });
+            };
     },
-    createUser: args => {
-        return User.findOne({ email: args.userInput.email })
-            .then(user => {
-                if (user) {
+    createUser: async args => {
+        try{
+        const existingUser = await User.findOne({ email: args.userInput.email })
+                if (existingUser) {
                     throw new Error('User Exists Already')
                 }
-                return bcrypt.hash(args.userInput.password, 12)
-            })
-            .then(hashedPassword => {
+                const hashedPassword = await bcrypt.hash(args.userInput.password, 12)
                 const user = new User({
                     email: args.userInput.email,
                     password: hashedPassword
                 })
-                return user.save()
-            })
-            .then(result => {
+                const result = await user.save()
                 return { ...result._doc, password: null, _id: result.id };
-            })
-            .catch(err => {
+            } catch(err) {
                 throw err
-            })
+            }
     }
 }
