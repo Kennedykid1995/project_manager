@@ -11,7 +11,6 @@ const app = express();
 
 app.use(bodyParser.json());
 
-
 //project schema
 app.use('/graphql', graphQLHttp({
     schema: graphqlSchema,
