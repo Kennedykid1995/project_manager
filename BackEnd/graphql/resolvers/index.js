@@ -6,6 +6,8 @@ const transformProject = project => {
     return {
         ...project.doc,
         _id: project.id,
+        title: project.title,
+        description: project.description, 
         creator: user.bind(this, project.creator)
     };
 }
@@ -56,7 +58,6 @@ module.exports = {
         const project = new Project({
             title: args.projectInput.title,
             description: args.projectInput.description,
-            creator: '5eb99c11b94eb21a144336fe'
         })
         let createdProject;
         try{
